@@ -1,0 +1,194 @@
+id: b34ea80b-0236-41dc-85b9-602e16034080
+revision: 207f0bc28f728bfdd524a568a84729cf2e5eef89
+name: bot-sederhanaa
+tag: latest
+desc: 'bot sederhana tugas dari indra'
+flows:
+    fallback:
+        active: true
+        fallback: true
+        intents:
+            defaultIntent:
+                type: text
+                initial: false
+                fallback: true
+        states:
+            init:
+                transitions:
+                    init:
+                        fallback: true
+                action: sayDontUnderstand
+                initial: true
+                end: true
+        actions:
+            sayDontUnderstand:
+                type: text
+                options:
+                    text: 'Maaf saya belum mengerti :('
+        methods: {}
+    init:
+        active: true
+        intents:
+            initIntent:
+                type: text
+                initial: true
+                fallback: false
+                classifier:
+                    nlu: greetings
+                    match: hello
+            nameIntent:
+                type: text
+                initial: false
+                fallback: false
+                classifier:
+                    nlu: superModel
+                    match: person
+                    options:
+                        labels: true
+                attributes:
+                    name:
+                        nlu: superModel
+                        path: person
+            locationIntent:
+                type: text
+                initial: false
+                fallback: false
+                classifier:
+                    nlu: superModel
+                    match: location
+                    options:
+                        labels: true
+                attributes:
+                    location:
+                        nlu: superModel
+                        path: location
+            genderIntent:
+                type: text
+                initial: false
+                fallback: false
+                classifier:
+                    -
+                        nlu: gender
+                        match: man
+                    -
+                        nlu: gender
+                        match: woman
+                attributes:
+                    gender:
+                        nlu: gender
+        states:
+            initState:
+                transitions:
+                    sayGreeting:
+                        condition: 'intent=="initIntent"'
+                initial: true
+            askGender:
+                transitions:
+                    askLocation:
+                        condition: 'intent=="genderIntent"'
+                        mapping:
+                            data.gender: attributes.gender
+                action: catchName
+            askLocation:
+                transitions:
+                    successInputDB:
+                        condition: 'intent=="locationIntent"'
+                        mapping:
+                            data.location: attributes.location
+                action: catchGender
+            successInputDB:
+                transitions: {}
+                action:
+                    -
+                        name: successAction
+                    -
+                        name: saveData
+                end: true
+            sayGreeting:
+                transitions:
+                    askGender:
+                        condition: 'intent=="nameIntent"'
+                        mapping:
+                            data.name: attributes.name
+                action:
+                    -
+                        name: sayGreetingAction
+                    -
+                        name: askforName
+        actions:
+            askforName:
+                type: text
+                options:
+                    text: 'Can you please type your name?'
+            sayGreetings:
+                type: text
+                options:
+                    text: 'Hi, welcome to this simple bot!'
+            successAction:
+                type: text
+                options:
+                    text: 'Yeay, it works!!! We''ve saved your data which includes your name: $(data.name), gender: $(data.gender), location: $(data.location) in our database!'
+            sayGreetingAction:
+                type: text
+                options:
+                    text: 'Hi! Welcome to the simple bot!'
+            catchName:
+                type: text
+                options:
+                    text: 'Halo $(data.name), good to know you! Are you a man or woman?'
+            catchGender:
+                type: text
+                options:
+                    text: 'Ah, I see. So you are a $(data.gender) named $(data.name). Anyway, can you tell me your location?'
+            saveData:
+                type: api
+                options:
+                    uri: 'https://bot-sederhanaa.herokuapp.com/notes'
+                    method: POST
+                    body:
+                        name: $(data.name)
+                        gender: $(data.gender)
+                        location: $(data.location)
+        methods: {}
+nlus:
+    greetings:
+        type: keyword
+        options:
+            keywords:
+                hello:
+                    - hi
+                    - hello
+                    - hey
+                    - halo
+                    - hallo
+    superModel:
+        type: nl
+        options:
+            nluId: 'bela_kata:bot-sederhanaa'
+            output: phrase
+            entity: kata
+            threshold: 0.8
+    gender:
+        type: keyword
+        options:
+            keywords:
+                woman:
+                    - cewek
+                    - wanita
+                    - girl
+                    - woman
+                    - guy
+                    - p
+                    - w
+                    - female
+                man:
+                    - cowok
+                    - pria
+                    - guy
+                    - boy
+                    - man
+                    - m
+                    - l
+                    - male
+methods: {}
+config: {}
